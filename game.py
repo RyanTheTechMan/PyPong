@@ -33,11 +33,22 @@ def run() -> None:
     last_touched: int
     difficulty_multiplier: float
     pi: float
+    spin_duration: float
+    spin_time: float
+    spin_amount: float
     
     pi = 3.141592653589
     
     screen_height = graphics.screen_height()
     screen_width = graphics.screen_width()
+    
+    # ----- Settings ----- #
+    paddle_size = 100.0 # Overall size of paddle
+    ball_size = 20.0 # Overall size of ball
+    speed = 300.0 # Inital speed of ball
+    difficulty_multiplier = 1.05 # How fast the ball speed increases everytime it hits the paddle
+    spin_duration = 5.0 # How long the ball will continue to spin
+    # ----- Settings ----- #
     
     paddle_current = 0.0 # Current position of the paddle
     angle = 0.0
@@ -51,13 +62,8 @@ def run() -> None:
     fps = 0
     last_touched = 0 # Last boundry touched: paddle 0, left 2, right 3, top 4
     
-    # ----- Settings ----- #
-    paddle_size = 100.0 # Overall size of paddle
-    ball_size = 20.0 # Overall size of ball
-    speed = 300.0 # Inital speed of ball
-    difficulty_multiplier = 1.05 # How fast the ball speed increases everytime it hits the paddle
-    
-    # ----- Settings ----- #
+    spin_time = spin_duration
+    spin_amount = 0.0
 
     while(not game_over):
         # ----- Delta Time ----- #
@@ -86,6 +92,18 @@ def run() -> None:
             paddle_current = interpolate(paddle_current, mouse_x_last, delta_time*15.0)
         
         graphics.draw_rect(paddle_current, -screen_height/2.0 + paddle_size/2.0, paddle_size, paddle_size/3.0, "red")
+        print(math.degrees(angle))
+        if (spin_time < spin_duration):
+            if (last_touched != 0):
+                spin_time = spin_duration
+            else:
+                if (math.degrees(angle) + spin_amount > 157.5):
+                    angle = math.radians(interpolate(math.degrees(angle), 157.5, spin_time/spin_duration))
+                elif (math.degrees(angle) + spin_amount < 22.5):
+                    angle = math.radians(interpolate(math.degrees(angle), 22.5, spin_time/spin_duration))
+                else:
+                    angle = math.radians(interpolate(math.degrees(angle), math.degrees(angle) + spin_amount, spin_time/spin_duration))
+                spin_time = spin_time + delta_time
         
         if (not game_running):
             ball_x = paddle_current
@@ -106,18 +124,21 @@ def run() -> None:
             elif (last_touched != 4 and ball_y + (ball_size/2.0) >= screen_height/2.0):
                 angle = -angle
                 last_touched = 4
-            #elif (ball_y + (ball_size/2.0) <= -screen_height/2.0):
-            #    game_over = True
+            elif (ball_y + (ball_size/2.0) <= -screen_height/2.0):
+                game_over = True
             
-            if (last_touched != 0 and ball_y - ball_size/2.0 < -screen_height/2.0 + paddle_size/3.0 + paddle_size/3.0):
+            if (last_touched != 0 and ball_y - ball_size/2.0 <= -screen_height/2.0 + paddle_size/3.0 + paddle_size/3.0):
                 if (paddle_current - paddle_size/2.0 < ball_x + (ball_size/2.0) and paddle_current + paddle_size/2.0 > ball_x - (ball_size/2.0)):
                     #angle = math.radians(math.degrees(-angle))
                     angle = math.radians(paddle_current - ball_x + 90.0)
                     
+                    spin_amount = (paddle_current*1000.0 - paddle_last*1000.0)/2000.0
+                    spin_time = 0.0
+                    
                     speed = speed*difficulty_multiplier
                     sound.play("https://cdn.discordapp.com/attachments/749653590326378499/902356910538383400/sfx-pop.mp3")
-                else:
-                    game_over = True
+                #else:
+                    #game_over = True
                 last_touched = 0
             
             ball_x = (math.cos(angle)*speed*delta_time + ball_x)
