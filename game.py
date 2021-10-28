@@ -18,6 +18,7 @@ def run() -> None:
     paddle_size: float
     paddle_current: float
     paddle_last: float
+    paddle_touched_time: float
     screen_height: float
     screen_width: float
     game_running: bool
@@ -25,6 +26,7 @@ def run() -> None:
     ball_size: float
     angle: float
     speed: float
+    score: int
     last_time: float
     start_time: float
     fps_loops_counter: float
@@ -55,6 +57,7 @@ def run() -> None:
     game_running = False
     game_over = False
     mouse_x_last = 0.0
+    score = int(speed)
     
     start_time = time.time()
     fps_loops_counter = 0.0
@@ -64,6 +67,7 @@ def run() -> None:
     
     spin_time = spin_duration
     spin_amount = 0.0
+    paddle_touched_time = 0.0
 
     while(not game_over):
         # ----- Delta Time ----- #
@@ -80,7 +84,10 @@ def run() -> None:
         graphics.draw_text("FPS: " + str(fps), screen_width/2.0-40.0, screen_height/2.0-20.0)
         # ----- FPS ----- #
         
-        graphics.draw_text("Score: " + str(int(speed)), -screen_width/2.0+100.0, screen_height/2.0-20.0, 20.0)
+        if (time.time() - paddle_touched_time <= 2.0):
+            score = int(interpolate(float(score), speed, (time.time() - paddle_touched_time) / 2.0))
+        
+        graphics.draw_text("Score: " + str(score), -screen_width/2.0+100.0, screen_height/2.0-20.0, 20.0)
         
         paddle_last = paddle_current
         
@@ -92,7 +99,7 @@ def run() -> None:
             paddle_current = interpolate(paddle_current, mouse_x_last, delta_time*15.0)
         
         graphics.draw_rect(paddle_current, -screen_height/2.0 + paddle_size/2.0, paddle_size, paddle_size/3.0, "red")
-        print(math.degrees(angle))
+        #print(math.degrees(angle))
         if (spin_time < spin_duration):
             if (last_touched != 0):
                 spin_time = spin_duration
@@ -132,8 +139,10 @@ def run() -> None:
                     #angle = math.radians(math.degrees(-angle))
                     angle = math.radians(paddle_current - ball_x + 90.0)
                     
-                    spin_amount = (paddle_current*1000.0 - paddle_last*1000.0)/2000.0
+                    spin_amount = (paddle_current*1000.0 - paddle_last*1000.0)/1200.0
                     spin_time = 0.0
+                    
+                    paddle_touched_time = time.time()
                     
                     speed = speed*difficulty_multiplier
                     sound.play("https://cdn.discordapp.com/attachments/749653590326378499/902356910538383400/sfx-pop.mp3")
